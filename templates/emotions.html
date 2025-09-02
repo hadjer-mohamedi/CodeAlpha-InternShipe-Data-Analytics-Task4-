@@ -2,48 +2,53 @@
 {% block content %}
 <h1 class="text-2xl font-bold mb-4">Task 2: Emotion Detection</h1>
 
-<!-- Top Section: Table + Filters -->
-<div class="grid md:grid-cols-3 gap-6 mb-6">
-  <!-- Table -->
-  <div class="col-span-2 bg-white rounded shadow p-4">
-    <h2 class="font-semibold mb-3">Emotion Statistics</h2>
-    <table class="w-full text-sm table-auto border">
-      <thead class="bg-slate-100">
-        <tr>
-          <th class="p-2 text-left">Emotion</th>
-          <th class="p-2 text-center">Count</th>
-          <th class="p-2 text-center">Percentage</th>
-        </tr>
-      </thead>
-      <tbody id="emotionTableBody"></tbody>
-    </table>
-  </div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
 
-  <!-- Filters -->
-  <div class="bg-white rounded shadow p-4">
+  <div class="bg-white rounded shadow p-4 order-1 md:order-none">
     <h3 class="font-medium mb-2">Filters</h3>
     <label class="block text-sm mb-1">Select Emotions</label>
-    <select id="emotionFilter" multiple class="w-full border rounded px-2 py-1 mb-4 h-32">
-      <!-- options populated dynamically -->
-    </select>
-    <button id="applyBtn" class="w-full bg-indigo-600 text-white py-2 rounded mb-2">Apply Filters</button>
-    <button id="resetBtn" class="w-full bg-gray-500 text-white py-2 rounded">Reset</button>
+    <select id="emotionFilter" multiple
+      class="w-full border rounded px-2 py-1 mb-4 h-32 overflow-y-auto"></select>
+
+    <button id="applyBtn"
+      class="w-full bg-indigo-600 text-white py-2 rounded mb-2 hover:bg-indigo-700 transition">
+      Apply Filters
+    </button>
+    <button id="resetBtn"
+      class="w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600 transition">
+      Reset
+    </button>
+  </div>
+
+  <div class="col-span-2 bg-white rounded shadow p-4 overflow-x-auto order-2 md:order-none">
+    <h2 class="font-semibold mb-3">Emotion Statistics</h2>
+    <div class="table-wrap">
+      <table class="w-full text-sm table-auto border min-w-[350px]">
+        <thead class="bg-slate-100">
+          <tr>
+            <th class="p-2 text-left">Emotion</th>
+            <th class="p-2 text-center">Count</th>
+            <th class="p-2 text-center">Percentage</th>
+          </tr>
+        </thead>
+        <tbody id="emotionTableBody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
-<!-- Charts -->
-<div class="grid md:grid-cols-2 gap-6 mb-6">
-  <div class="bg-white rounded shadow p-4">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+  <div class="bg-white rounded shadow p-4 hover:shadow-lg transition order-2 md:order-none">
     <h2 class="font-semibold mb-2">Bar Chart</h2>
     <canvas id="emotionChartBar" height="250"></canvas>
   </div>
 
-  <div class="bg-white rounded shadow p-4">
+  <div class="bg-white rounded shadow p-4 hover:shadow-lg transition order-3 md:order-none">
     <h2 class="font-semibold mb-2">Pie Chart</h2>
     <canvas id="emotionChartPie" height="250"></canvas>
   </div>
 
-  <div class="bg-white rounded shadow p-4 md:col-span-2">
+  <div class="bg-white rounded shadow p-4 md:col-span-2 hover:shadow-lg transition order-4 md:order-none">
     <h2 class="font-semibold mb-2">Radar Chart</h2>
     <canvas id="emotionChartRadar" height="280"></canvas>
   </div>
@@ -70,7 +75,6 @@ async function loadEmotions(selected=[]) {
   const rows = await res.json();
   let filtered = rows;
 
-  // Apply filter
   if (selected.length > 0) {
     filtered = rows.filter(r => selected.includes(r.emotion));
   }
@@ -80,33 +84,28 @@ async function loadEmotions(selected=[]) {
   const data = filtered.map(r => r.count);
   const colors = labels.map(l => emotionColors[l.toLowerCase()] || '#6366f1');
 
-  // Destroy old charts
   if (chartBar) chartBar.destroy();
   if (chartPie) chartPie.destroy();
   if (chartRadar) chartRadar.destroy();
 
-  // Bar chart
   chartBar = new Chart(document.getElementById('emotionChartBar'), {
     type: 'bar',
     data: { labels, datasets: [{ label:"Count", data, backgroundColor: colors }] },
     options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
   });
 
-  // Pie chart
   chartPie = new Chart(document.getElementById('emotionChartPie'), {
     type: 'pie',
     data: { labels, datasets: [{ data, backgroundColor: colors }] },
     options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
   });
 
-  // Radar chart
   chartRadar = new Chart(document.getElementById('emotionChartRadar'), {
     type: 'radar',
     data: { labels, datasets: [{ label:"Emotions", data, backgroundColor: 'rgba(99,102,241,0.3)', borderColor: '#6366f1', pointBackgroundColor: colors }] },
     options: { responsive: true, scales: { r: { beginAtZero: true } } }
   });
 
-  // Table
   const tb = document.getElementById('emotionTableBody');
   tb.innerHTML = '';
   filtered.forEach(r => {
@@ -121,11 +120,11 @@ async function loadEmotions(selected=[]) {
   });
 }
 
-// Populate emotion filter select
 async function populateEmotionFilter() {
   const res = await fetch('/api/emotion-distribution');
   const rows = await res.json();
   const sel = document.getElementById('emotionFilter');
+  sel.innerHTML = '';
   rows.forEach(r => {
     const opt = document.createElement('option');
     opt.value = r.emotion;
@@ -134,7 +133,6 @@ async function populateEmotionFilter() {
   });
 }
 
-// Events
 document.getElementById('applyBtn').addEventListener('click', () => {
   const sel = document.getElementById('emotionFilter');
   const selected = Array.from(sel.selectedOptions).map(o => o.value);
@@ -146,7 +144,6 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   loadEmotions();
 });
 
-// Init
 populateEmotionFilter();
 loadEmotions();
 </script>

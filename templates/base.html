@@ -6,19 +6,73 @@
     <title>{{ title or "InternShipe-Data Analytics-Task4: Anime Sentiment" }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <link rel="stylesheet" href="/static/style.css" />
   </head>
+
   <body class="bg-slate-50 text-slate-900">
-    <nav class="bg-slate-900 text-white">
-      <div class="mx-auto max-w-7xl px-4 py-3 flex gap-6">
-        <a href="/" class="font-semibold hover:text-indigo-300">Classification</a>
-        <a href="/emotions" class="font-semibold hover:text-indigo-300">Emotions</a>
-        <a href="/trends" class="font-semibold hover:text-indigo-300">Trends</a>
-        <a href="/insights" class="font-semibold hover:text-indigo-300">Insights</a>
+    <nav class="sticky top-0 z-40 bg-slate-900 text-white">
+      <div class="mx-auto max-w-7xl px-4">
+        <div class="h-14 flex items-center justify-between">
+          <a href="/" class="font-semibold tracking-wide">Data Analytics : Anime Sentiment</a>
+
+          <div class="hidden md:flex items-center gap-6">
+            <a href="/"
+               class="font-semibold hover:text-indigo-300 {{ 'text-indigo-300' if request.url.path == '/' else '' }}">
+              Classification
+            </a>
+            <a href="/emotions"
+               class="font-semibold hover:text-indigo-300 {{ 'text-indigo-300' if request.url.path.startswith('/emotions') else '' }}">
+              Emotions
+            </a>
+            <a href="/trends"
+               class="font-semibold hover:text-indigo-300 {{ 'text-indigo-300' if request.url.path.startswith('/trends') else '' }}">
+              Trends
+            </a>
+            <a href="/insights"
+               class="font-semibold hover:text-indigo-300 {{ 'text-indigo-300' if request.url.path.startswith('/insights') else '' }}">
+              Insights
+            </a>
+          </div>
+          <button id="navToggle" class="md:hidden p-2 rounded hover:bg-slate-800" aria-label="Toggle menu">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6"
+                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+        <div id="mobileMenu" class="md:hidden hidden border-t border-slate-800 py-3 space-y-2">
+          <a href="/"
+             class="block py-1 px-1 rounded hover:bg-slate-800 {{ 'bg-slate-800' if request.url.path == '/' else '' }}">
+            Classification
+          </a>
+          <a href="/emotions"
+             class="block py-1 px-1 rounded hover:bg-slate-800 {{ 'bg-slate-800' if request.url.path.startswith('/emotions') else '' }}">
+            Emotions
+          </a>
+          <a href="/trends"
+             class="block py-1 px-1 rounded hover:bg-slate-800 {{ 'bg-slate-800' if request.url.path.startswith('/trends') else '' }}">
+            Trends
+          </a>
+          <a href="/insights"
+             class="block py-1 px-1 rounded hover:bg-slate-800 {{ 'bg-slate-800' if request.url.path.startswith('/insights') else '' }}">
+            Insights
+          </a>
+        </div>
       </div>
     </nav>
-    <main class="mx-auto max-w-7xl px-4 py-8">
+
+    <main class="mx-auto max-w-7xl px-4 py-6">
       {% block content %}{% endblock %}
     </main>
+
+    <script>
+      const btn = document.getElementById('navToggle');
+      const menu = document.getElementById('mobileMenu');
+      if (btn && menu) {
+        btn.addEventListener('click', () => menu.classList.toggle('hidden'));
+      }
+    </script>
   </body>
 </html>

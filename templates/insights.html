@@ -1,97 +1,111 @@
 {% extends "base.html" %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-4">Task 5: Business Insights</h1>
+<h1 class="text-3xl font-bold mb-6">Task 5: Business Insights</h1>
 
-<!-- Top bar -->
-<div class="bg-white rounded shadow p-4 mb-4 flex justify-between items-center">
-  <span id="lastUpdated" class="text-xs text-slate-500">Loading...</span>
-  <div class="flex gap-2">
-    <button id="refreshBtn" class="px-3 py-1 border rounded text-sm bg-indigo-600 text-white">🔄 Refresh</button>
-    <button id="downloadBtn" class="px-3 py-1 border rounded text-sm">⬇ Download Report</button>
+<div
+  class="bg-white dark:bg-gray-800 rounded shadow p-4 mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+  <span id="lastUpdated" class="text-xs text-slate-500 dark:text-slate-400">Loading...</span>
+  <div class="flex flex-wrap gap-2">
+    <button id="refreshBtn"
+      class="px-3 py-1 border rounded text-sm bg-indigo-600 text-white hover:bg-indigo-700 transition">
+      🔄 Refresh
+    </button>
+    <button id="downloadBtn"
+      class="px-3 py-1 border rounded text-sm hover:bg-slate-100 dark:hover:bg-gray-700 transition">
+      ⬇ Download Report
+    </button>
   </div>
 </div>
 
-<!-- Summary cards -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-  <div class="bg-white p-4 shadow rounded text-center">
-    <div class="text-xl font-bold" id="statTotal">--</div>
-    <div class="text-xs text-slate-500">Total Anime</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white dark:bg-gray-800 p-4 shadow rounded text-center hover:shadow-lg transition">
+    <div class="text-2xl font-extrabold" id="statTotal">--</div>
+    <div class="text-sm text-slate-500 dark:text-slate-400">Total Anime</div>
   </div>
-  <div class="bg-white p-4 shadow rounded text-center">
-    <div class="text-xl font-bold" id="statAvgRating">--</div>
-    <div class="text-xs text-slate-500">Average Rating</div>
+  <div class="bg-white dark:bg-gray-800 p-4 shadow rounded text-center hover:shadow-lg transition">
+    <div class="text-2xl font-extrabold" id="statAvgRating">--</div>
+    <div class="text-sm text-slate-500 dark:text-slate-400">Average Rating</div>
   </div>
-  <div class="bg-white p-4 shadow rounded text-center">
-    <div class="text-xl font-bold" id="statTopGenre">--</div>
-    <div class="text-xs text-slate-500">Top Genre</div>
+  <div class="bg-white dark:bg-gray-800 p-4 shadow rounded text-center hover:shadow-lg transition">
+    <div class="text-2xl font-extrabold" id="statTopGenre">--</div>
+    <div class="text-sm text-slate-500 dark:text-slate-400">Top Genre</div>
   </div>
-  <div class="bg-white p-4 shadow rounded text-center">
-    <div class="text-xl font-bold" id="statPosSent">--</div>
-    <div class="text-xs text-slate-500">Positive Sentiment %</div>
+  <div class="bg-white dark:bg-gray-800 p-4 shadow rounded text-center hover:shadow-lg transition">
+    <div class="text-2xl font-extrabold" id="statPosSent">--</div>
+    <div class="text-sm text-slate-500 dark:text-slate-400">Positive Sentiment %</div>
   </div>
 </div>
 
-<!-- Charts -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-  <div class="bg-white rounded shadow p-4">
+  <div class="bg-white dark:bg-gray-800 rounded shadow p-4 h-90 hover:shadow-lg transition">
     <h3 class="font-semibold mb-2">Sentiment Distribution</h3>
-    <canvas id="sentimentChart" height="200"></canvas>
+    <canvas id="sentimentChart" class="w-full h-full"></canvas>
   </div>
-  <div class="bg-white rounded shadow p-4">
+  <div class="bg-white dark:bg-gray-800 rounded shadow p-4 h-96 hover:shadow-lg transition">
     <h3 class="font-semibold mb-2">Emotion Distribution</h3>
-    <canvas id="emotionChart" height="200"></canvas>
+    <canvas id="emotionChart" class="w-full h-full"></canvas>
   </div>
 </div>
 
-<div class="bg-white rounded shadow p-4 mb-6">
+<div class="bg-white dark:bg-gray-800 rounded shadow p-4 mb-6 h-70 hover:shadow-lg transition">
   <h3 class="font-semibold mb-2">Top Genres</h3>
-  <canvas id="genreChart" height="200"></canvas>
+  <canvas id="genreChart" class="w-full h-full"></canvas>
 </div>
 
-<!-- Report -->
-<div class="bg-white rounded shadow p-4">
+<div class="bg-white dark:bg-gray-800 rounded shadow p-4 mb-6 hover:shadow-lg transition">
   <h3 class="font-semibold mb-2">Insights Report</h3>
-  <div id="insightsHtml" class="prose max-w-none"></div>
+  <div id="insightsHtml" class="prose max-w-none break-words dark:prose-invert"></div>
 </div>
 
 <div id="loadingOverlay"
-  class="hidden fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-  <div class="bg-white p-6 rounded shadow text-center">
-    <div class="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-3"></div>
-    <p class="text-slate-700">Refreshing data... Please wait.</p>
+  class="hidden fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-300">
+  <div class="bg-white dark:bg-gray-800 p-6 rounded shadow text-center animate-pulse">
+    <div class="h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-3"></div>
+    <p class="text-slate-700 dark:text-slate-300">Refreshing data... Please wait.</p>
   </div>
 </div>
 
-<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   let charts = {};
+
+
+  function animateValue(id, start, end, duration) {
+    let range = end - start;
+    let current = start;
+    let increment = range / (duration / 50);
+    const obj = document.getElementById(id);
+    const timer = setInterval(() => {
+      current += increment;
+      obj.textContent = Math.round(current);
+      if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+        obj.textContent = end;
+        clearInterval(timer);
+      }
+    }, 50);
+  }
 
   async function loadInsights() {
     const res = await fetch('/api/insights');
     const data = await res.json();
     const md = data.markdown || "No insights generated.";
 
-    // Update cards
     if (data.stats) {
-      document.getElementById("statTotal").textContent = data.stats.total_anime || "--";
+      animateValue("statTotal", 0, data.stats.total_anime || 0, 1000);
       document.getElementById("statAvgRating").textContent = (data.stats.avg_rating || 0).toFixed(2);
       document.getElementById("statTopGenre").textContent = data.stats.top_genre || "--";
       document.getElementById("statPosSent").textContent =
         ((data.stats.sentiment_distribution.Positive || 0) * 100).toFixed(1) + "%";
     }
 
-    // Render markdown
     document.getElementById('insightsHtml').innerHTML = marked.parse(md);
 
-    // Last updated
     if (data.last_updated) {
       const dt = new Date(data.last_updated * 1000);
       document.getElementById('lastUpdated').textContent = "Last updated: " + dt.toLocaleString();
     }
 
-    // Download button
     document.getElementById('downloadBtn').onclick = () => {
       const blob = new Blob([md], { type: "text/markdown" });
       const url = URL.createObjectURL(blob);
@@ -102,12 +116,11 @@
       URL.revokeObjectURL(url);
     };
 
-    // Destroy old charts
+
     if (charts.sentimentChart) charts.sentimentChart.destroy();
     if (charts.emotionChart) charts.emotionChart.destroy();
     if (charts.genreChart) charts.genreChart.destroy();
 
-    // Sentiment chart
     if (data.sentiments) {
       charts.sentimentChart = new Chart(document.getElementById("sentimentChart"), {
         type: "doughnut",
@@ -115,14 +128,26 @@
           labels: Object.keys(data.sentiments),
           datasets: [{
             data: Object.values(data.sentiments),
-            backgroundColor: ["#16a34a", "#f59e0b", "#ef4444"]
+            backgroundColor: ["#16a34a", "#facc15", "#ef4444"], // Green / Yellow / Red
+            borderColor: "#ffffff",
+            borderWidth: 2
           }]
+        },
+        options: {
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: { enabled: true }
+          },
+          responsive: true,
+          animation: { animateRotate: true, animateScale: true }
         }
       });
     }
 
-    // Emotion chart
     if (data.emotions) {
+      const emotionColors = [
+        "#3b82f6", "#f59e0b", "#ef4444", "#10b981", "#8b5cf6", "#f43f5e"
+      ]; // vibrant colors for emotions
       charts.emotionChart = new Chart(document.getElementById("emotionChart"), {
         type: "bar",
         data: {
@@ -130,14 +155,28 @@
           datasets: [{
             label: "Count",
             data: Object.values(data.emotions),
-            backgroundColor: "#3b82f6"
+            backgroundColor: emotionColors.slice(0, Object.keys(data.emotions).length),
+            borderWidth: 1
           }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: true }
+          },
+          animation: { duration: 1000, easing: 'easeOutQuart' },
+          scales: {
+            y: { beginAtZero: true }
+          }
         }
       });
     }
 
-    // Genre chart
     if (data.genres) {
+      const genreColors = [
+        "#8b5cf6", "#f97316", "#14b8a6", "#f43f5e", "#3b82f6", "#facc15"
+      ];
       charts.genreChart = new Chart(document.getElementById("genreChart"), {
         type: "bar",
         data: {
@@ -145,15 +184,27 @@
           datasets: [{
             label: "Top Genres",
             data: Object.values(data.genres),
-            backgroundColor: "#8b5cf6"
+            backgroundColor: genreColors.slice(0, Object.keys(data.genres).length),
+            borderWidth: 1
           }]
         },
-        options: { indexAxis: 'y' }
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: true }
+          },
+          animation: { duration: 1200, easing: 'easeOutBounce' },
+          scales: {
+            x: { beginAtZero: true }
+          }
+        }
       });
     }
+
   }
 
-  // Poll until insights ready after refresh
   async function checkIfReady() {
     try {
       const res = await fetch("/api/insights");
@@ -175,10 +226,7 @@
     overlay.classList.add("flex");
 
     try {
-      // Start refresh
       await fetch("/api/refresh-data", { method: "POST" });
-
-      // Poll until finished
       let done = false;
       while (!done) {
         const res = await fetch("/api/refresh-status");
@@ -191,7 +239,7 @@
             await loadInsights();
           }
         } else {
-          await new Promise(r => setTimeout(r, 3000)); // wait 3s
+          await new Promise(r => setTimeout(r, 3000));
         }
       }
     } catch (e) {
