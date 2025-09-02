@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Task 4: Public Opinion & Trends</h1>
+
+<div class="grid md:grid-cols-3 gap-4 mb-6">
+  <!-- Left Column: Table -->
+  <div class="col-span-2 bg-white rounded shadow p-4">
+    <h3 class="font-semibold mb-2">Opinion Trends by Genre</h3>
+    <table class="w-full table-auto text-sm border" id="trendTable">
+      <thead class="bg-slate-100">
+        <tr>
+          <th class="p-2 text-left">Genre</th>
+          <th class="p-2 text-center">Positive</th>
+          <th class="p-2 text-center">Neutral</th>
+          <th class="p-2 text-center">Negative</th>
+          <th class="p-2 text-center">Joy</th>
+          <th class="p-2 text-center">Anger</th>
+          <th class="p-2 text-center">Sadness</th>
+          <th class="p-2 text-center">Trust</th>
+        </tr>
+      </thead>
+      <tbody id="trendBody"></tbody>
+    </table>
+    <!-- Pagination -->
+    <div class="flex justify-between items-center mt-3 text-sm">
+      <button id="prevBtn" class="px-3 py-1 border rounded">Prev</button>
+      <span id="pageInfo"></span>
+      <button id="nextBtn" class="px-3 py-1 border rounded">Next</button>
+    </div>
+  </div>
+
+  <!-- Right Column: Filters -->
+  <div class="bg-white rounded shadow p-4">
+    <h3 class="font-semibold mb-2">Filters</h3>
+
+    <!-- Genre Filter -->
+    <label class="block text-sm">Genre</label>
+    <select id="genreFilter" class="w-full border rounded px-2 py-1 mb-3">
+      <option value="">All</option>
+    </select>
+
+    <!-- Sentiment Filter -->
+    <label class="block text-sm">Sentiments</label>
+    <div id="sentimentFilter" class="mb-3 space-y-1">
+      <label><input type="checkbox" value="Positive" checked> Positive</label><br>
+      <label><input type="checkbox" value="Neutral" checked> Neutral</label><br>
+      <label><input type="checkbox" value="Negative" checked> Negative</label>
+    </div>
+
+    <!-- Emotion Filter -->
+    <label class="block text-sm">Emotions</label>
+    <div id="emotionFilter" class="space-y-1">
+      <label><input type="checkbox" value="joy" checked> Joy</label><br>
+      <label><input type="checkbox" value="anger" checked> Anger</label><br>
+      <label><input type="checkbox" value="sadness" checked> Sadness</label><br>
+      <label><input type="checkbox" value="trust" checked> Trust</label><br>
+      <label><input type="checkbox" value="neutral" checked> Neutral</label>
+    </div>
+  </div>
+</div>
+
+<!-- Sentiment Chart -->
+<div class="bg-white rounded shadow p-4 mt-6">
+  <h3 class="font-semibold mb-2">Sentiment Distribution</h3>
+  <canvas id="sentimentChart" height="220"></canvas>
+</div>
+
+<!-- Emotion Chart -->
+<div class="bg-white rounded shadow p-4 mt-6">
+  <h3 class="font-semibold mb-2">Emotion Distribution</h3>
+  <canvas id="emotionChart" height="220"></canvas>
+</div>
+
+<script>
+  let allRows = [];
+  let currentPage = 1;
+  const pageSize = 10;
+
+  async function loadTrends() {
+    const [resSent, resEmot] = await Promise.all([
+      fetch('/api/opinion-trends'),
+      fetch('/api/emotion-trends')
+    ]);
+    const sentRows = await resSent.json();
+    const emotRows = await resEmot.json();
+
+    // Merge them by genre on the frontend
+    const map = {};
+    sentRows.forEach(r => map[r.genre] = { ...r });
+    emotRows.forEach(r => {
+      if (!map[r.genre]) map[r.genre] = { genre: r.genre };
+      Object.assign(map[r.genre], r);
+    });
+
+    allRows = Object.values(map);
+
+    // Fill Genre filter + render
+    const genreSet = [...new Set(allRows.map(r => r.genre))].sort();
+    const genreSelect = document.getElementById('genreFilter');
+    genreSet.forEach(g => {
+      genreSelect.innerHTML += `<option value="${g}">${g}</option>`;
+    });
+
+    renderTable();
+    renderCharts();
+  }
+
+
+  function getFilters() {
+    const genre = document.getElementById('genreFilter').value;
+    const sentiments = [...document.querySelectorAll('#sentimentFilter input:checked')].map(cb => cb.value);
+    const emotions = [...document.querySelectorAll('#emotionFilter input:checked')].map(cb => cb.value);
+    return { genre, sentiments, emotions };
+  }
+
+  function renderTable() {
+    const { genre, sentiments, emotions } = getFilters();
+    const body = document.getElementById('trendBody');
+
+    let filtered = allRows.filter(r =>
+      (!genre || r.genre === genre)
+    );
+
+    // Pagination logic
+    const start = (currentPage - 1) * pageSize;
+    const paged = filtered.slice(start, start + pageSize);
+
+    body.innerHTML = paged.map(r => `
+    <tr>
+      <td class="p-2">${r.genre}</td>
+      <td class="p-2 text-center">${sentiments.includes('Positive') ? (r.Positive || 0) : '-'}</td>
+      <td class="p-2 text-center">${sentiments.includes('Neutral') ? (r.Neutral || 0) : '-'}</td>
+      <td class="p-2 text-center">${sentiments.includes('Negative') ? (r.Negative || 0) : '-'}</td>
+      <td class="p-2 text-center">${emotions.includes('joy') ? (r.joy || 0) : '-'}</td>
+      <td class="p-2 text-center">${emotions.includes('anger') ? (r.anger || 0) : '-'}</td>
+      <td class="p-2 text-center">${emotions.includes('sadness') ? (r.sadness || 0) : '-'}</td>
+      <td class="p-2 text-center">${emotions.includes('trust') ? (r.trust || 0) : '-'}</td>
+    </tr>
+  `).join('');
+
+    document.getElementById('pageInfo').innerText =
+      `Page ${currentPage} of ${Math.ceil(filtered.length / pageSize)}`;
+  }
+
+let sentimentChartInstance, emotionChartInstance;
+
+function renderCharts(){
+  const { genre, sentiments, emotions } = getFilters();
+
+
+  let filtered = allRows.filter(r =>
+    (!genre || r.genre === genre)
+  );
+
+
+  const topRows = filtered;
+  const labels = topRows.map(r => r.genre);
+
+  const sentimentDatasets = [];
+  if (sentiments.includes('Positive')) {
+    sentimentDatasets.push({ label: 'Positive', data: topRows.map(r => r.Positive||0), backgroundColor: '#16a34a' });
+  }
+  if (sentiments.includes('Neutral')) {
+    sentimentDatasets.push({ label: 'Neutral', data: topRows.map(r => r.Neutral||0), backgroundColor: '#f59e0b' });
+  }
+  if (sentiments.includes('Negative')) {
+    sentimentDatasets.push({ label: 'Negative', data: topRows.map(r => r.Negative||0), backgroundColor: '#ef4444' });
+  }
+
+  if (sentimentChartInstance) sentimentChartInstance.destroy();
+  sentimentChartInstance = new Chart(document.getElementById('sentimentChart'), {
+    type: 'bar',
+    data: { labels, datasets: sentimentDatasets },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } },
+               scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+  });
+
+  const emotionDatasets = [];
+  if (emotions.includes('joy')) {
+    emotionDatasets.push({ label: 'Joy', data: topRows.map(r => r.joy||0), backgroundColor: '#60a5fa' });
+  }
+  if (emotions.includes('anger')) {
+    emotionDatasets.push({ label: 'Anger', data: topRows.map(r => r.anger||0), backgroundColor: '#f43f5e' });
+  }
+  if (emotions.includes('sadness')) {
+    emotionDatasets.push({ label: 'Sadness', data: topRows.map(r => r.sadness||0), backgroundColor: '#6b7280' });
+  }
+  if (emotions.includes('trust')) {
+    emotionDatasets.push({ label: 'Trust', data: topRows.map(r => r.trust||0), backgroundColor: '#22d3ee' });
+  }
+  if (emotions.includes('neutral')) {
+    emotionDatasets.push({ label: 'Neutral', data: topRows.map(r => r.neutral||0), backgroundColor: '#a3a3a3' });
+  }
+
+  if (emotionChartInstance) emotionChartInstance.destroy();
+  emotionChartInstance = new Chart(document.getElementById('emotionChart'), {
+    type: 'bar',
+    data: { labels, datasets: emotionDatasets },
+    options: { responsive: true, plugins: { legend: { position: 'bottom' } },
+               scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+  });
+}
+
+
+  document.getElementById('prevBtn').onclick = () => {
+    if (currentPage > 1) { currentPage--; renderTable(); }
+  };
+  document.getElementById('nextBtn').onclick = () => {
+    const { genre } = getFilters();
+    const filtered = allRows.filter(r => (!genre || r.genre === genre));
+    if (currentPage < Math.ceil(filtered.length / pageSize)) { currentPage++; renderTable(); }
+  };
+
+document.getElementById('genreFilter').onchange = () => { renderTable(); renderCharts(); };
+document.querySelectorAll('#sentimentFilter input, #emotionFilter input').forEach(cb =>
+  cb.onchange = () => { renderTable(); renderCharts(); }
+);
+
+loadTrends().then(renderCharts);
+
+</script>
+{% endblock %}

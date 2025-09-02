@@ -1,0 +1,44 @@
+genre,Negative,Neutral,Positive
+Action,106,1476,1263
+Adventure,51,1346,951
+Cars,0,49,23
+Comedy,144,2728,1773
+Dementia,43,182,15
+Demons,11,167,116
+Drama,45,933,1038
+Ecchi,11,412,214
+Fantasy,85,1367,857
+Game,6,93,82
+Harem,5,151,161
+Hentai,21,1001,119
+Historical,14,449,343
+Horror,18,223,128
+Josei,2,14,38
+Kids,49,1249,311
+Magic,35,424,319
+Martial Arts,5,132,128
+Mecha,28,567,349
+Military,11,185,230
+Music,59,638,163
+Mystery,11,163,321
+Parody,10,257,141
+Police,2,78,117
+Psychological,6,86,137
+Romance,33,673,758
+Samurai,3,78,67
+School,45,572,603
+Sci-Fi,54,1208,808
+Seinen,17,261,269
+Shoujo,9,314,280
+Shoujo Ai,2,25,28
+Shounen,41,703,968
+Shounen Ai,3,30,32
+Slice of Life,34,664,522
+Space,20,189,172
+Sports,14,306,223
+Super Power,17,219,229
+Supernatural,42,459,536
+Thriller,2,27,58
+Vampire,3,40,59
+Yaoi,1,27,11
+Yuri,1,38,3
