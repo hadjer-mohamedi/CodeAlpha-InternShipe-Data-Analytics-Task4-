@@ -36,23 +36,60 @@
   </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-  <div class="bg-white dark:bg-gray-800 rounded shadow p-4 h-90 hover:shadow-lg transition">
+<!-- Chart Type Selector -->
+<div class="bg-white dark:bg-gray-800 rounded shadow p-4 mb-6">
+  <div class="flex flex-wrap gap-4 items-center">
+    <span class="font-medium">Chart View:</span>
+    <div class="flex flex-wrap gap-2">
+      <button id="viewCombined" class="px-3 py-1 rounded text-sm bg-indigo-600 text-white">Combined</button>
+      <button id="viewSentiment"
+        class="px-3 py-1 rounded text-sm bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200">Seperat</button>
+
+    </div>
+
+    <span class="font-medium ml-4">Chart Type:</span>
+    <select id="chartType"
+      class="px-3 py-1 rounded text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
+      <option value="doughnut">Doughnut Chart</option>
+      <option value="bar">Bar Chart</option>
+      <option value="polarArea">Polar Area Chart</option>
+      <option value="line">Line Chart</option>
+
+    </select>
+
+    <span class="font-medium ml-4">Genre Filter:</span>
+    <select id="genreFilter"
+      class="px-3 py-1 rounded text-sm bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600">
+      <option value="all">All Genres</option>
+      <!-- Will be populated dynamically -->
+    </select>
+  </div>
+</div>
+
+<!-- Combined Chart Container -->
+
+<div id="combinedChartContainer" class="bg-white dark:bg-gray-800 rounded shadow p-4 h-96">
+  <h3 class="font-semibold mb-2">Sentiment & Emotion Distribution</h3>
+  <canvas id="combinedChart" class="w-full h-full"></canvas>
+</div>
+
+<div id="individualChartsContainer" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+  <div class="bg-white dark:bg-gray-800 rounded shadow p-4 h-96">
     <h3 class="font-semibold mb-2">Sentiment Distribution</h3>
     <canvas id="sentimentChart" class="w-full h-full"></canvas>
   </div>
-  <div class="bg-white dark:bg-gray-800 rounded shadow p-4 h-96 hover:shadow-lg transition">
+  <div class="bg-white dark:bg-gray-800 rounded shadow p-4 h-96">
     <h3 class="font-semibold mb-2">Emotion Distribution</h3>
     <canvas id="emotionChart" class="w-full h-full"></canvas>
   </div>
 </div>
 
-<div class="bg-white dark:bg-gray-800 rounded shadow p-4 mb-6 h-70 hover:shadow-lg transition">
+<div class="bg-white dark:bg-gray-800 rounded shadow p-4 mb-6 h-96">
   <h3 class="font-semibold mb-2">Top Genres</h3>
   <canvas id="genreChart" class="w-full h-full"></canvas>
 </div>
 
-<div class="bg-white dark:bg-gray-800 rounded shadow p-4 mb-6 hover:shadow-lg transition">
+<div class="bg-white dark:bg-gray-800 rounded shadow p-4 mb-6">
   <h3 class="font-semibold mb-2">Insights Report</h3>
   <div id="insightsHtml" class="prose max-w-none break-words dark:prose-invert"></div>
 </div>
@@ -69,7 +106,50 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   let charts = {};
+  let currentView = 'combined';
+  let currentChartType = 'doughnut';
+  let currentGenreFilter = 'all';
+  let chartData = {};
 
+  // View toggle functionality
+  document.getElementById('viewCombined').addEventListener('click', () => toggleView('combined'));
+  document.getElementById('viewSentiment').addEventListener('click', () => toggleView('sentiment'));
+  //document.getElementById('viewEmotion').addEventListener('click', () => toggleView('emotion'));
+
+  // Chart type change handler
+  document.getElementById('chartType').addEventListener('change', function () {
+    currentChartType = this.value;
+    refreshCharts();
+  });
+
+  // Genre filter change handler
+  document.getElementById('genreFilter').addEventListener('change', function () {
+    currentGenreFilter = this.value;
+    refreshCharts();
+  });
+
+  function toggleView(view) {
+    currentView = view;
+
+    // Update button styles
+    document.getElementById('viewCombined').className =
+      `px-3 py-1 rounded text-sm ${view === 'combined' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`;
+    document.getElementById('viewSentiment').className =
+      `px-3 py-1 rounded text-sm ${view === 'sentiment' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`;
+    //document.getElementById('viewEmotion').className = 
+    // `px-3 py-1 rounded text-sm ${view === 'emotion' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`;
+
+    // Show/hide chart containers
+    if (view === 'combined') {
+      document.getElementById('combinedChartContainer').classList.remove('hidden');
+      document.getElementById('individualChartsContainer').classList.add('hidden');
+    } else {
+      document.getElementById('combinedChartContainer').classList.add('hidden');
+      document.getElementById('individualChartsContainer').classList.remove('hidden');
+    }
+
+    refreshCharts();
+  }
 
   function animateValue(id, start, end, duration) {
     let range = end - start;
@@ -115,94 +195,226 @@
       a.click();
       URL.revokeObjectURL(url);
     };
+    chartData = data;
+    populateGenreFilter(data.genres);
+    initCharts();
+  }
 
+  function populateGenreFilter(genres) {
+    const filterSelect = document.getElementById('genreFilter');
+    while (filterSelect.options.length > 1) {
+      filterSelect.remove(1);
+    }
 
+    if (genres) {
+      const topGenres = Object.entries(genres)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+      topGenres.forEach(([genre]) => {
+        const option = document.createElement('option');
+        option.value = genre.toLowerCase();
+        option.textContent = genre;
+        filterSelect.appendChild(option);
+      });
+    }
+  }
+
+  function initCharts() {
+    if (charts.combinedChart) charts.combinedChart.destroy();
     if (charts.sentimentChart) charts.sentimentChart.destroy();
     if (charts.emotionChart) charts.emotionChart.destroy();
     if (charts.genreChart) charts.genreChart.destroy();
+    createCombinedChart();
+    createSentimentChart();
+    createEmotionChart();
+    createGenreChart();
+  }
 
-    if (data.sentiments) {
-      charts.sentimentChart = new Chart(document.getElementById("sentimentChart"), {
-        type: "doughnut",
-        data: {
-          labels: Object.keys(data.sentiments),
-          datasets: [{
-            data: Object.values(data.sentiments),
-            backgroundColor: ["#16a34a", "#facc15", "#ef4444"], // Green / Yellow / Red
-            borderColor: "#ffffff",
-            borderWidth: 2
-          }]
-        },
-        options: {
-          plugins: {
-            legend: { position: 'bottom' },
-            tooltip: { enabled: true }
-          },
-          responsive: true,
-          animation: { animateRotate: true, animateScale: true }
-        }
-      });
+  function refreshCharts() {
+    if (currentView === 'combined') {
+      if (charts.combinedChart) charts.combinedChart.destroy();
+      createCombinedChart();
+    } else {
+      if (charts.sentimentChart) charts.sentimentChart.destroy();
+      if (charts.emotionChart) charts.emotionChart.destroy();
+      createSentimentChart();
+      createEmotionChart();
+    }
+  }
+
+  function createCombinedChart() {
+    const ctx = document.getElementById('combinedChart').getContext('2d');
+    let sentimentData = chartData.sentiments || {};
+    let emotionData = chartData.emotions || {};
+    if (currentGenreFilter !== 'all' && chartData.sentimentByGenre && chartData.emotionByGenre) {
+      sentimentData = chartData.sentimentByGenre[currentGenreFilter] || {};
+      emotionData = chartData.emotionByGenre[currentGenreFilter] || {};
+    }
+    let labels, data, backgroundColor;
+    if (currentChartType === 'bar') {
+      labels = [...Object.keys(sentimentData), ...Object.keys(emotionData)];
+      data = [...Object.values(sentimentData), ...Object.values(emotionData)];
+      backgroundColor = [
+        '#16a34a', '#facc15', '#ef4444',
+        '#3b82f6', '#f59e0b', '#ef4444', '#10b981', '#8b5cf6', '#f43f5e'
+      ].slice(0, labels.length);
+    } else {
+      const sentimentTotal = Object.values(sentimentData).reduce((a, b) => a + b, 0);
+      const emotionTotal = Object.values(emotionData).reduce((a, b) => a + b, 0);
+
+      if (sentimentTotal > emotionTotal) {
+        labels = Object.keys(sentimentData);
+        data = Object.values(sentimentData);
+        backgroundColor = ["#16a34a", "#facc15", "#ef4444"];
+      } else {
+        labels = Object.keys(emotionData);
+        data = Object.values(emotionData);
+        backgroundColor = ["#3b82f6", "#f59e0b", "#ef4444", "#10b981", "#8b5cf6", "#f43f5e"].slice(0, labels.length);
+      }
     }
 
-    if (data.emotions) {
-      const emotionColors = [
-        "#3b82f6", "#f59e0b", "#ef4444", "#10b981", "#8b5cf6", "#f43f5e"
-      ]; // vibrant colors for emotions
-      charts.emotionChart = new Chart(document.getElementById("emotionChart"), {
-        type: "bar",
-        data: {
-          labels: Object.keys(data.emotions),
-          datasets: [{
-            label: "Count",
-            data: Object.values(data.emotions),
-            backgroundColor: emotionColors.slice(0, Object.keys(data.emotions).length),
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: true }
-          },
-          animation: { duration: 1000, easing: 'easeOutQuart' },
-          scales: {
-            y: { beginAtZero: true }
+    charts.combinedChart = new Chart(ctx, {
+      type: currentChartType,
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: backgroundColor,
+          borderColor: "#ffffff",
+          borderWidth: 2
+        }]
+      },
+      options: {
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { enabled: true },
+          title: {
+            display: true,
+            text: currentGenreFilter === 'all' ?
+              'Overall Distribution' :
+              `Distribution for ${currentGenreFilter.charAt(0).toUpperCase() + currentGenreFilter.slice(1)} Genre`
           }
-        }
-      });
-    }
-
-    if (data.genres) {
-      const genreColors = [
-        "#8b5cf6", "#f97316", "#14b8a6", "#f43f5e", "#3b82f6", "#facc15"
-      ];
-      charts.genreChart = new Chart(document.getElementById("genreChart"), {
-        type: "bar",
-        data: {
-          labels: Object.keys(data.genres),
-          datasets: [{
-            label: "Top Genres",
-            data: Object.values(data.genres),
-            backgroundColor: genreColors.slice(0, Object.keys(data.genres).length),
-            borderWidth: 1
-          }]
         },
-        options: {
-          indexAxis: 'y',
-          responsive: true,
-          plugins: {
-            legend: { display: false },
-            tooltip: { enabled: true }
-          },
-          animation: { duration: 1200, easing: 'easeOutBounce' },
-          scales: {
-            x: { beginAtZero: true }
-          }
-        }
-      });
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { animateRotate: true, animateScale: true }
+      }
+    });
+  }
+
+  function createSentimentChart() {
+    const ctx = document.getElementById('sentimentChart').getContext('2d');
+
+    let sentimentData = chartData.sentiments || {};
+    if (currentGenreFilter !== 'all' && chartData.sentimentByGenre) {
+      sentimentData = chartData.sentimentByGenre[currentGenreFilter] || {};
     }
 
+    charts.sentimentChart = new Chart(ctx, {
+      type: "doughnut",
+      data: {
+        labels: Object.keys(sentimentData),
+        datasets: [{
+          data: Object.values(sentimentData),
+          backgroundColor: ["#16a34a", "#facc15", "#ef4444"],
+          borderColor: "#ffffff",
+          borderWidth: 2
+        }]
+      },
+      options: {
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { enabled: true },
+          title: {
+            display: true,
+            text: currentGenreFilter === 'all' ?
+              'Sentiment Distribution' :
+              `Sentiment for ${currentGenreFilter.charAt(0).toUpperCase() + currentGenreFilter.slice(1)} Genre`
+          }
+        },
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { animateRotate: true, animateScale: true }
+      }
+    });
+  }
+
+  function createEmotionChart() {
+    const ctx = document.getElementById('emotionChart').getContext('2d');
+
+    let emotionData = chartData.emotions || {};
+    if (currentGenreFilter !== 'all' && chartData.emotionByGenre) {
+      emotionData = chartData.emotionByGenre[currentGenreFilter] || {};
+    }
+
+    const emotionColors = [
+      "#3b82f6", "#f59e0b", "#ef4444", "#10b981", "#8b5cf6", "#f43f5e"
+    ];
+
+    charts.emotionChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: Object.keys(emotionData),
+        datasets: [{
+          label: "Count",
+          data: Object.values(emotionData),
+          backgroundColor: emotionColors.slice(0, Object.keys(emotionData).length),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: true },
+          title: {
+            display: true,
+            text: currentGenreFilter === 'all' ?
+              'Emotion Distribution' :
+              `Emotions for ${currentGenreFilter.charAt(0).toUpperCase() + currentGenreFilter.slice(1)} Genre`
+          }
+        },
+        animation: { duration: 1000, easing: 'easeOutQuart' },
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  function createGenreChart() {
+    const ctx = document.getElementById('genreChart').getContext('2d');
+
+    const genreColors = [
+      "#8b5cf6", "#f97316", "#14b8a6", "#f43f5e", "#3b82f6", "#facc15"
+    ];
+
+    charts.genreChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: Object.keys(chartData.genres || {}),
+        datasets: [{
+          label: "Top Genres",
+          data: Object.values(chartData.genres || {}),
+          backgroundColor: genreColors.slice(0, Object.keys(chartData.genres || {}).length),
+          borderWidth: 1
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { enabled: true }
+        },
+        animation: { duration: 1200, easing: 'easeOutBounce' },
+        scales: {
+          x: { beginAtZero: true }
+        }
+      }
+    });
   }
 
   async function checkIfReady() {
@@ -251,6 +463,7 @@
     }
   };
 
+  // Initialize the page
   loadInsights();
 </script>
 {% endblock %}
